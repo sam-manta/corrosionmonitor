@@ -22,6 +22,7 @@ Other Library Calls:        mcculw.ul.scaled_win_buf_alloc()
 Special Requirements:       Device must have an A/D converter.
                             Analog signals on up to four input channels.
 """
+
 from __future__ import absolute_import, division, print_function
 from builtins import *  # @UnusedWildImport
 
@@ -37,6 +38,10 @@ try:
 except ImportError:
     from .console_examples_util import config_first_detected_device
 
+# Samantas code, schedule the data acquisition
+import schedule
+import time
+
 
 def run_example():
     # By default, the example detects and displays all available devices and
@@ -48,7 +53,7 @@ def run_example():
     dev_id_list = []
     board_num = 0
     rate = 100
-    file_name = 'scan_data.csv'
+    file_name = "scan_data.csv"
     memhandle = None
 
     # The size of the UL buffer to create, in seconds
@@ -63,11 +68,16 @@ def run_example():
 
         daq_dev_info = DaqDeviceInfo(board_num)
         if not daq_dev_info.supports_analog_input:
-            raise Exception('Error: The DAQ device does not support '
-                            'analog input')
+            raise Exception("Error: The DAQ device does not support " "analog input")
 
-        print('\nActive DAQ device: ', daq_dev_info.product_name, ' (',
-              daq_dev_info.unique_id, ')\n', sep='')
+        print(
+            "\nActive DAQ device: ",
+            daq_dev_info.product_name,
+            " (",
+            daq_dev_info.unique_id,
+            ")\n",
+            sep="",
+        )
 
         ai_info = daq_dev_info.get_ai_info()
 
@@ -100,8 +110,9 @@ def run_example():
 
         ai_range = ai_info.supported_ranges[0]
 
-        scan_options = (ScanOptions.BACKGROUND | ScanOptions.CONTINUOUS |
-                        ScanOptions.SCALEDATA)
+        scan_options = (
+            ScanOptions.BACKGROUND | ScanOptions.CONTINUOUS | ScanOptions.SCALEDATA
+        )
 
         memhandle = ul.scaled_win_buf_alloc(ul_buffer_count)
 
@@ -110,12 +121,19 @@ def run_example():
 
         # Check if the buffer was successfully allocated
         if not memhandle:
-            raise Exception('Failed to allocate memory')
+            raise Exception("Failed to allocate memory")
 
         # Start the scan
         ul.a_in_scan(
-            board_num, low_chan, high_chan, ul_buffer_count,
-            rate, ai_range, memhandle, scan_options)
+            board_num,
+            low_chan,
+            high_chan,
+            ul_buffer_count,
+            rate,
+            ai_range,
+            memhandle,
+            scan_options,
+        )
 
         status = Status.IDLE
         # Wait for the scan to start fully
@@ -123,13 +141,13 @@ def run_example():
             status, _, _ = ul.get_status(board_num, FunctionType.AIFUNCTION)
 
         # Create a file for storing the data
-        with open(file_name, 'w') as f:
-            print('Writing data to ' + file_name, end='')
+        with open(file_name, "w") as f:
+            print("Writing data to " + file_name, end="")
 
             # Write a header to the file
             for chan_num in range(low_chan, high_chan + 1):
-                f.write('Channel ' + str(chan_num) + ',')
-            f.write(u'\n')
+                f.write("Channel " + str(chan_num) + ",")
+            f.write("\n")
 
             # Start the write loop
             prev_count = 0
@@ -137,8 +155,9 @@ def run_example():
             write_ch_num = low_chan
             while status != Status.IDLE:
                 # Get the latest counts
-                status, curr_count, _ = ul.get_status(board_num,
-                                                      FunctionType.AIFUNCTION)
+                status, curr_count, _ = ul.get_status(
+                    board_num, FunctionType.AIFUNCTION
+                )
 
                 new_data_count = curr_count - prev_count
 
@@ -148,7 +167,7 @@ def run_example():
                 if new_data_count > ul_buffer_count:
                     # Print an error and stop writing
                     ul.stop_background(board_num, FunctionType.AIFUNCTION)
-                    print('A buffer overrun occurred')
+                    print("A buffer overrun occurred")
                     break
 
                 # Check if a chunk is available
@@ -160,33 +179,33 @@ def run_example():
                     # buffer. Multiple copy operations will be required.
                     if prev_index + write_chunk_size > ul_buffer_count - 1:
                         first_chunk_size = ul_buffer_count - prev_index
-                        second_chunk_size = (
-                            write_chunk_size - first_chunk_size)
+                        second_chunk_size = write_chunk_size - first_chunk_size
 
                         # Copy the first chunk of data to the
                         # write_chunk_array
                         ul.scaled_win_buf_to_array(
-                            memhandle, write_chunk_array, prev_index,
-                            first_chunk_size)
+                            memhandle, write_chunk_array, prev_index, first_chunk_size
+                        )
 
                         # Create a pointer to the location in
                         # write_chunk_array where we want to copy the
                         # remaining data
-                        second_chunk_pointer = cast(addressof(write_chunk_array)
-                                                    + first_chunk_size
-                                                    * sizeof(c_double),
-                                                    POINTER(c_double))
+                        second_chunk_pointer = cast(
+                            addressof(write_chunk_array)
+                            + first_chunk_size * sizeof(c_double),
+                            POINTER(c_double),
+                        )
 
                         # Copy the second chunk of data to the
                         # write_chunk_array
                         ul.scaled_win_buf_to_array(
-                            memhandle, second_chunk_pointer,
-                            0, second_chunk_size)
+                            memhandle, second_chunk_pointer, 0, second_chunk_size
+                        )
                     else:
                         # Copy the data to the write_chunk_array
                         ul.scaled_win_buf_to_array(
-                            memhandle, write_chunk_array, prev_index,
-                            write_chunk_size)
+                            memhandle, write_chunk_array, prev_index, write_chunk_size
+                        )
 
                     # Check for a buffer overrun just after copying the data
                     # from the UL buffer. This will ensure that the data was
@@ -194,19 +213,20 @@ def run_example():
                     # completed. This should be done before writing to the
                     # file, so that corrupt data does not end up in it.
                     status, curr_count, _ = ul.get_status(
-                        board_num, FunctionType.AIFUNCTION)
+                        board_num, FunctionType.AIFUNCTION
+                    )
                     if curr_count - prev_count > ul_buffer_count:
                         # Print an error and stop writing
                         ul.stop_background(board_num, FunctionType.AIFUNCTION)
-                        print('A buffer overrun occurred')
+                        print("A buffer overrun occurred")
                         break
 
                     for i in range(write_chunk_size):
-                        f.write(str(write_chunk_array[i]) + ',')
+                        f.write(str(write_chunk_array[i]) + ",")
                         write_ch_num += 1
                         if write_ch_num == high_chan + 1:
                             write_ch_num = low_chan
-                            f.write(u'\n')
+                            f.write("\n")
                 else:
                     wrote_chunk = False
 
@@ -220,17 +240,18 @@ def run_example():
 
                     if prev_count >= points_to_write:
                         break
-                    print('.', end='')
+                    print(".", end="")
                 else:
                     # Wait a short amount of time for more data to be
                     # acquired.
                     sleep(0.1)
+                    # I am changing sleep to a higher period 0.1 to 10 s
 
         ul.stop_background(board_num, FunctionType.AIFUNCTION)
     except Exception as e:
-        print('\n', e)
+        print("\n", e)
     finally:
-        print('Done')
+        print("Done")
         if memhandle:
             # Free the buffer in a finally block to prevent  a memory leak.
             ul.win_buf_free(memhandle)
@@ -238,5 +259,8 @@ def run_example():
             ul.release_daq_device(board_num)
 
 
-if __name__ == '__main__':
-    run_example()
+if __name__ == "__main__":
+    schedule.every(20).seconds.do(run_example())
+while True:
+    schedule.run_pending()
+    time.sleep(10)
