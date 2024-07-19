@@ -1,5 +1,5 @@
 """
-File:                       voltagemonitor.py
+File:                       Corrpotential.py
 
 Library Call Demonstrated:  mcculw.ul.a_in_scan() in Background mode with scan
                             option mcculw.enums.ScanOptions.BACKGROUND and, if
@@ -22,6 +22,7 @@ Special Requirements:       Device must have an A/D converter.
                             Analog signals on up to four input channels.
 """
 
+## Import packages
 from __future__ import absolute_import, division, print_function
 from builtins import *  # @UnusedWildImport
 
@@ -42,23 +43,34 @@ import time
 import keyboard
 import datetime
 
+## Functions
 
-def writetofile():
-    # Get the exact time when you start recording data
-    file_name = "scan_data.txt"
+
+def maketxtfile(relaynumber, typeofmeasurament):
+    # This function opens a txt file with the sample number and writes down
+    # the title + extra infor
+    if typeofmeasurament == 0:
+        file_name = "potential_measurament_{}.txt".format(relaynumber + 1)
+        typem = "Potential measurament V"
+    else:
+        file_name = "corrosion_current_{}.txt".format(relaynumber + 1)
+        typem = "Corrosion current -10mV/microAmpere"
+
     current_time = time.strftime("%H:%M:%S", time.localtime())
     today = datetime.date.today()
     file = open(file_name, "w")
     file.write("First point of data acquisition:\n")
     writetheday = "{}, {}\n".format(today, current_time)
     file.write(writetheday)
-    file.write("Ch1, Ch2, Ch3, Ch4, Time\n")
+    file.write("Sample n. {}, {}. \n".format(relaynumber + 1, typem))
+    file.write("Ch1 V, Ch2 V, Time\n")
 
     file.close()
+    return file_name
 
 
-def run_example():
-    # By default, the example detects and displays all available devices and
+def collectdatafromsensor(file_name, ch_number):
+    # Detects and displays all available devices and
     # selects the first device listed. Use the dev_id_list variable to filter
     # detected devices by device ID (see UL documentation for device IDs).
     # If use_device_detection is set to False, the board_num variable needs to
@@ -144,11 +156,13 @@ def run_example():
         )
 
         # Create a format string that aligns the data in columns
-        row_format = "{:>12}" * (num_chans)
+        row_format = "{:>12}" * (2)
+        # num_chans
 
         # Print the channel name headers
         labels = []
-        for ch_num in range(low_chan, high_chan + 1):
+        # for ch_num in range(low_chan, high_chan + 1):
+        for ch_num in range(2):
             labels.append("CH" + str(ch_num))
         print(row_format.format(*labels))
 
@@ -164,8 +178,15 @@ def run_example():
                 # the data buffer. Display the latest value for each
                 # channel.
                 display_data = []
+                # Change the range based on potential or current
+                if ch_number == 0:
+                    record_channel = curr_index
 
-                for data_index in range(curr_index, curr_index + num_chans):
+                else:
+                    record_channel = curr_index + 2
+
+                for data_index in range(record_channel, record_channel + 2):
+                    # Change this so that it only reads channel 1 and 2 and alternative 3 and 4.
                     if ScanOptions.SCALEDATA in scan_options:
                         # If the SCALEDATA ScanOption was used, the values
                         # in the array are already in engineering units.
@@ -205,19 +226,41 @@ def run_example():
         if use_device_detection:
             ul.release_daq_device(board_num)
     # Print to file
-    with open("scan_data.txt", "a") as file:
+    with open(file_name, "a") as file:
         for inner_list in print_to_csv_data:
             line = ",".join(inner_list)
             file.write(line + "\n")
 
 
-# Samantas code = print to same datafile every time Add a time stamp
-# from each reading (new column?)
-if __name__ == "__main__":
-    writetofile()
-    schedule.every(5).minutes.do(run_example)
-    run_example()
-    print("Press 'q' to stop the script.")
+def mainfunction():
+    # This function takes care of switching on and off the relays and
+    # saving to file the collected data. It should run every some minutes.
+    print("runs every 20 minutes")
+    relaynumber = 6
+    for j in range(2):
+        if j == 0:
+            ch_number = 0
+            file_n = "potential_measurament_"
+        else:
+            ch_number = 2
+            file_n = "corrosion_current_"
+
+        for i in range(relaynumber):
+            file_name = "{}{}.txt".format(file_n, i + 1)
+            collectdatafromsensor(file_name, ch_number)
+
+
+# Main
+relaynumber = 6
+
+# Move this inside mainfuction
+for j in range(2):
+    for i in range(relaynumber):
+        maketxtfile(i, j)
+
+# mainfunction()
+schedule.every(5).minutes.do(mainfunction)
+print("Press 'q' to stop the script.")
 
 while True:
     schedule.run_pending()

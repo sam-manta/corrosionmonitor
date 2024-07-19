@@ -38,10 +38,6 @@ try:
 except ImportError:
     from .console_examples_util import config_first_detected_device
 
-# Samantas code, schedule the data acquisition
-import schedule
-import time
-
 
 def run_example():
     # By default, the example detects and displays all available devices and
@@ -260,7 +256,4 @@ def run_example():
 
 
 if __name__ == "__main__":
-    schedule.every(20).seconds.do(run_example())
-while True:
-    schedule.run_pending()
-    time.sleep(10)
+    run_example()
