@@ -43,6 +43,10 @@ import time
 import keyboard
 import datetime
 
+## For the relay
+import sys
+import serial
+
 ## Functions
 
 
@@ -67,6 +71,28 @@ def maketxtfile(relaynumber, typeofmeasurament):
 
     file.close()
     return file_name
+
+
+def openrelay(relay_n, fd):
+    print("opening relay n.{}".format(relay_n))
+    if relay_n < 6:
+        command = "0{}".format(2 * relay_n - 1)
+    else:
+        command = "{}".format(2 * relay_n - 1)
+
+    fd.write(bytes.fromhex(command))
+    time.sleep(1)
+
+
+def closerelay(relay_n, fd):
+    print("closing relay n.{}".format(relay_n))
+    if relay_n < 5:
+        command = "0{}".format(2 * relay_n - 1)
+    else:
+        command = "{}".format(2 * relay_n - 1)
+    command = "0{}".format(2 * relay_n)
+    fd.write(bytes.fromhex(command))
+    time.sleep(1)
 
 
 def collectdatafromsensor(file_name, ch_number):
@@ -237,29 +263,50 @@ def mainfunction():
     # saving to file the collected data. It should run every some minutes.
     print("runs every 20 minutes")
     relaynumber = 6
+    portName = "COM5"
+
+    # Open port for communication
+    fd = serial.Serial(portName, 9600, timeout=1)
+    time.sleep(1)
+    fd.write(b"\x50")
+    # Reads device identification
+    time.sleep(0.5)
+    fd.write(b"\x51")
+    # Device ready
+
     for j in range(2):
         if j == 0:
             ch_number = 0
             file_n = "potential_measurament_"
+            closerelay(7, fd)
         else:
             ch_number = 2
             file_n = "corrosion_current_"
+            openrelay(7, fd)
 
         for i in range(relaynumber):
             file_name = "{}{}.txt".format(file_n, i + 1)
+            openrelay(i + 1, fd)
             collectdatafromsensor(file_name, ch_number)
+            closerelay(i + 1, fd)
+
+    fd.close()
+    print("Serial connection closed")
 
 
 # Main
 relaynumber = 6
+
+
+# One extra relay opens and close for potential (off) and current (on), relay 7
 
 # Move this inside mainfuction
 for j in range(2):
     for i in range(relaynumber):
         maketxtfile(i, j)
 
-# mainfunction()
-schedule.every(5).minutes.do(mainfunction)
+mainfunction()
+schedule.every(10).minutes.do(mainfunction)
 print("Press 'q' to stop the script.")
 
 while True:
