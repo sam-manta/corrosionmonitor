@@ -75,23 +75,27 @@ def maketxtfile(relaynumber, typeofmeasurament):
 
 def openrelay(relay_n, fd):
     print("opening relay n.{}".format(relay_n))
-    if relay_n < 6:
-        command = "0{}".format(2 * relay_n - 1)
-    else:
-        command = "{}".format(2 * relay_n - 1)
 
-    fd.write(bytes.fromhex(command))
+    command = 2 * relay_n - 1
+    # if relay_n < 6:
+    # command = "0{}".format(2 * relay_n - 1)
+    # else:
+    # command = "{}".format(2 * relay_n - 1)
+
+    fd.write(bytes([command]))
     time.sleep(1)
 
 
 def closerelay(relay_n, fd):
     print("closing relay n.{}".format(relay_n))
-    if relay_n < 5:
-        command = "0{}".format(2 * relay_n - 1)
-    else:
-        command = "{}".format(2 * relay_n - 1)
-    command = "0{}".format(2 * relay_n)
-    fd.write(bytes.fromhex(command))
+
+    command = 2 * relay_n
+    # if relay_n < 5:
+    #    command = "0{}".format(2 * relay_n - 1)
+    # else:
+    #    command = "{}".format(2 * relay_n - 1)
+
+    fd.write(bytes([command]))
     time.sleep(1)
 
 
@@ -263,7 +267,7 @@ def mainfunction():
     # saving to file the collected data. It should run every some minutes.
     print("runs every 20 minutes")
     relaynumber = 6
-    portName = "COM5"
+    portName = "COM3"
 
     # Open port for communication
     fd = serial.Serial(portName, 9600, timeout=1)
@@ -278,11 +282,11 @@ def mainfunction():
         if j == 0:
             ch_number = 0
             file_n = "potential_measurament_"
-            closerelay(7, fd)
+            closerelay(j + 7, fd)
         else:
             ch_number = 2
             file_n = "corrosion_current_"
-            openrelay(7, fd)
+            openrelay(j + 6, fd)
 
         for i in range(relaynumber):
             file_name = "{}{}.txt".format(file_n, i + 1)

@@ -1,4 +1,4 @@
 First point of data acquisition:
-2024-07-19, 16:05:37
+2024-07-24, 10:38:03
 Sample n. 4, Corrosion current -10mV/microAmpere. 
 Ch1 V, Ch2 V, Time
