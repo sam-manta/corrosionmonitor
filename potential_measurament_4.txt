@@ -1,4 +1,4 @@
 First point of data acquisition:
-2024-07-24, 10:38:03
+2024-07-24, 11:53:03
 Sample n. 4, Potential measurament V. 
 Ch1 V, Ch2 V, Time

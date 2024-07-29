@@ -266,14 +266,14 @@ def mainfunction():
     # This function takes care of switching on and off the relays and
     # saving to file the collected data. It should run every some minutes.
     print("runs every 20 minutes")
-    relaynumber = 6
+    relaynumber = 3
     portName = "COM5"
 
     # Open port for communication
     fd = serial.Serial(portName, 9600, timeout=1)
     time.sleep(1)
     fd.write(b"\x50")
-    # Reads device identificatiousb 230 analo
+    # Reads device identification
     time.sleep(0.5)
     fd.write(b"\x51")
     # Device ready
@@ -291,15 +291,17 @@ def mainfunction():
         for i in range(relaynumber):
             file_name = "{}{}.txt".format(file_n, i + 1)
             openrelay(i + 1, fd)
+            openrelay(i + 4, fd)
             collectdatafromsensor(file_name, ch_number)
             closerelay(i + 1, fd)
+            closerelay(i + 4, fd)
 
     fd.close()
     print("Serial connection closed")
 
 
 # Main
-relaynumber = 6
+relaynumber = 3
 
 
 # One extra relay opens and close for potential (off) and current (on), relay 7
