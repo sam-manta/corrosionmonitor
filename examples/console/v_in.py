@@ -13,6 +13,7 @@ Other Library Calls:        mcculw.ul.release_daq_device()
 Special Requirements:       Device must have an A/D converter.
                             Analog signal on an input channel.
 """
+
 from __future__ import absolute_import, division, print_function
 from builtins import *  # @UnusedWildImport
 
@@ -41,11 +42,16 @@ def run_example():
 
         daq_dev_info = DaqDeviceInfo(board_num)
         if not daq_dev_info.supports_analog_input:
-            raise Exception('Error: The DAQ device does not support '
-                            'analog input')
+            raise Exception("Error: The DAQ device does not support " "analog input")
 
-        print('\nActive DAQ device: ', daq_dev_info.product_name, ' (',
-              daq_dev_info.unique_id, ')\n', sep='')
+        print(
+            "\nActive DAQ device: ",
+            daq_dev_info.product_name,
+            " (",
+            daq_dev_info.unique_id,
+            ")\n",
+            sep="",
+        )
 
         ai_info = daq_dev_info.get_ai_info()
         ai_range = ai_info.supported_ranges[0]
@@ -62,13 +68,13 @@ def run_example():
             value = ul.v_in_32(board_num, channel, ai_range)
 
         # Display the value
-        print('Value:', value)
+        print("Value:", value)
     except Exception as e:
-        print('\n', e)
+        print("\n", e)
     finally:
         if use_device_detection:
             ul.release_daq_device(board_num)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     run_example()
